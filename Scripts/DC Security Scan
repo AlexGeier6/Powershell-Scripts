@@ -1,0 +1,45 @@
+#Set-ExecutionPolicy -ExecutionPolicy Bypass
+#Import AD Module if it's not already imported
+If (-not (Get-Module -Name 'ActiveDirectory' -ErrorAction SilentlyContinue)) {
+    Import-Module ActiveDirectory
+    }
+
+# variable declaration
+$Time = (Get-Date).AddMinutes(-5)
+$ListOfDCs = Get-ADDomainController -Filter {Name -like "*"}
+$HashTable = @{
+    Logname='Security'
+    StartTime=$Time
+    ID=4720,4723,4725,4726,4738,4740,4767,4780,4781,4794,5376,5377,4727,4728,4729,4731,4732,4733,4735,4754,4756
+}
+
+# Retrieve log entires from each DC
+    $LogEntries = Get-WinEvent -ComputerName DC3 -FilterHashTable $HashTable -ErrorAction SilentlyContinue
+    $LogEntries += Get-WinEvent -ComputerName DC4 -FilterHashTable $HashTable -ErrorAction SilentlyContinue
+    $LogEntries += Get-WinEvent -ComputerName DC5 -FilterHashTable $HashTable -ErrorAction SilentlyContinue
+    <#$LogEntries | Select-object |  Sort-Object TimeCreated ft #> #-Wrap#>
+    $LogEntries | ConvertTo-Json | Out-File "C:\Users\alexg\Desktop"
+
+
+<#Process Log Entries
+If ($LogEntries -ne $null)
+{
+        $FromAddress = 'Alerts@COMPANY.com'
+        $ToAddress = 'alex.geier@COMPANY.com'
+        $SMTPServer = 'mail.COMPANY.com'
+        $EmailMailBody = ($LogEntries | Select-Object | Format-Table | Out-String)
+        $HTML = $message
+        $Subject = "New Security Events Have Occured" 
+        $LogEntries | Format-List | Out-String | Out-File -FilePath \\dc4\c$\SecurityEventLog\AccountSecurityLog.txt
+start-sleep -Seconds 2        
+        $LogEntries | Format-List | Out-String | Out-File -FilePath "\\dc4\c$\SecurityEventLog\AccountSecurityLog $(get-date -f yyyy-MM-dd-HH-mm-ss).txt" -append
+
+Send-MailMessage `
+        -From $FromAddress `
+        -To $ToAddress `
+        -Subject $Subject `
+        -SmtpServer $SMTPServer `
+        -Body ($EmailMailBody + "Please review the full event details here: \\dc4\c$\SecurityEventLog\")`
+        -attachment \\dc4\c$\SecurityEventLog\AccountSecurityLog.txt
+
+}#>
