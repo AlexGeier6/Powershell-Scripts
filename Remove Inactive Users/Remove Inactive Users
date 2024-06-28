@@ -1,0 +1,11 @@
+$todaysDate = Get-Date -Format "MM-dd-yyyy"
+
+$90Days = (get-date).adddays(-60)
+
+$path = "\\dc4\c$\Terminated User AD Removal Log\3MonthTermindatedUsers" + $todaysDate + ".csv"
+
+$users = Get-ADUser -properties * -filter {(lastlogondate -notlike "*" -OR lastlogondate -le $90days) -AND (passwordlastset -le $90days) -AND (enabled -eq $false)} -SearchBase "OU=Terminated,OU=Users,DC=Domain,DC=local" | Where-Object {$todaysDate -ge $_.lastlogondate} | 
+select-object name,SAMaccountname,lastlogondate | Sort-Object lastlogondate | Export-Csv -Path $path
+$users
+
+$RemoveUsers = Remove-ADUser -Identity $users -Confirm:$False
